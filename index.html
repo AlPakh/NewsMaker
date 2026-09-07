@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f2e9">
+  <meta name="description" content="Мастерская печатной газеты. Создавайте выпуски, редактируйте статьи и сохраняйте их в PDF, JSON или Markdown.">
+  <title>Газетная мастерская — Валенарский вестник</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="document.js" defer></script>
+  <script src="pagination.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">К редактору</a>
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">В</span><div><h1>Газетная мастерская</h1><span class="brand-caption">СЛОВО ОБРЕТАЕТ БУМАГУ</span></div></div>
+    <div class="save-state" id="save-state" role="status"><span aria-hidden="true">●</span> <span id="save-label">Подготовка мастерской…</span></div>
+    <nav class="header-actions" aria-label="Файлы и помощь">
+      <button id="help-button" class="icon-button help-button" aria-label="Как пользоваться редактором">?</button>
+      <button id="import-button" class="button quiet"><span aria-hidden="true">↥</span> Открыть<span class="wide-label"> выпуск</span></button>
+      <button id="export-button" class="button primary"><span aria-hidden="true">↧</span> Экспорт</button>
+    </nav>
+  </header>
+
+  <div class="workspace-bar">
+    <div class="document-label"><span class="eyebrow">НАБОРНАЯ</span><span class="bar-divider"></span><span id="document-label">Валенарский вестник</span></div>
+    <div class="history-actions"><button id="undo-button" class="icon-button" aria-label="Отменить действие (Ctrl+Z)" disabled>↶</button><button id="redo-button" class="icon-button" aria-label="Повторить действие (Ctrl+Shift+Z)" disabled>↷</button><span class="bar-divider"></span><button id="print-button" class="text-button"><span aria-hidden="true">▤</span> Печать</button></div>
+  </div>
+
+  <nav class="mobile-tabs" aria-label="Разделы мастерской">
+    <button data-view="materials" aria-pressed="false">Материалы <span id="mobile-count">6</span></button>
+    <button data-view="preview" aria-pressed="true">Макет газеты</button>
+    <button data-view="settings" aria-pressed="false">Оформление</button>
+  </nav>
+
+  <main id="workspace" class="workspace" data-view="preview">
+    <aside class="materials-panel" aria-labelledby="materials-title">
+      <div class="panel-heading"><h2 id="materials-title">Материалы выпуска</h2><span class="count-badge" id="article-count">0</span></div>
+      <p class="panel-description">Всё, что отправится в печать.</p>
+      <button id="add-button" class="button add-button"><span aria-hidden="true">＋</span> Добавить материал</button>
+      <ol class="article-list" id="article-list" aria-label="Материалы в порядке размещения"></ol>
+      <div class="sidebar-footnote"><span class="ornament" aria-hidden="true">❦</span><p>Хорошая газета начинается<br>с истории, которую стоит рассказать.</p></div>
+      <button id="new-button" class="text-button new-button">＋ Чистый выпуск</button>
+    </aside>
+
+    <section class="preview-panel" aria-label="Предпросмотр печатного выпуска">
+      <div class="preview-toolbar"><div><span class="eyebrow">ПЕЧАТНЫЙ МАКЕТ</span><span class="preview-size" id="preview-size">A4 · 210 × 297 мм</span></div><div class="zoom-controls"><button id="zoom-out" class="icon-button" aria-label="Уменьшить макет">−</button><button id="zoom-fit" class="zoom-value" aria-label="Уместить макет по ширине">100%</button><button id="zoom-in" class="icon-button" aria-label="Увеличить макет">＋</button></div></div>
+      <div class="canvas" id="canvas"><div class="pages" id="pages"></div></div>
+      <div class="preview-footer"><span id="page-count" role="status">1 страница</span><span class="desktop-hint">Нажмите на материал в газете, чтобы его изменить</span><span id="word-count">0 слов</span></div>
+    </section>
+
+    <aside class="settings-panel" aria-labelledby="settings-title">
+      <div class="panel-heading"><h2 id="settings-title">Оформление выпуска</h2><span aria-hidden="true">✧</span></div>
+      <form id="settings-form" class="settings-form">
+        <fieldset><legend>ВЫХОДНЫЕ ДАННЫЕ</legend>
+          <label for="meta-title">Название газеты</label><input id="meta-title" name="title" data-meta="title" maxlength="100">
+          <label for="meta-subtitle">Подзаголовок</label><textarea id="meta-subtitle" name="subtitle" data-meta="subtitle" rows="2" maxlength="200"></textarea>
+          <label for="meta-city">Место издания</label><input id="meta-city" name="city" data-meta="city" maxlength="100">
+          <label for="meta-date">Дата выпуска</label><input id="meta-date" name="date" data-meta="date" maxlength="100">
+          <div class="field-pair"><div><label for="meta-issue">Номер</label><input id="meta-issue" name="issue" data-meta="issue" maxlength="40"></div><div><label for="meta-price">Цена</label><input id="meta-price" name="price" data-meta="price" maxlength="60"></div></div>
+        </fieldset>
+        <fieldset><legend>ПОЛОСА И НАБОР</legend>
+          <label for="page-format">Формат бумаги</label><select id="page-format" name="format" data-setting="format"><option value="A4">A4 · 210 × 297 мм</option><option value="A3">A3 · 297 × 420 мм</option></select>
+          <span class="field-label" id="columns-label">Количество колонок</span><div class="segmented columns-options" role="group" aria-labelledby="columns-label"><button type="button" data-columns="1" aria-pressed="false">1</button><button type="button" data-columns="2" aria-pressed="false">2</button><button type="button" data-columns="3" aria-pressed="true">3</button><button type="button" data-columns="4" aria-pressed="false">4</button></div>
+          <label for="font-size" class="range-label">Размер текста <output id="font-size-value" for="font-size">12 пт</output></label><input type="range" id="font-size" name="fontSize" data-setting="fontSize" min="10" max="16" step="0.5" value="12">
+          <label for="paper-color">Цвет бумаги</label><select id="paper-color" name="paper" data-setting="paper"><option value="warm">Тёплая слоновая кость</option><option value="white">Белая · для принтера</option></select>
+          <label class="checkbox-label" for="ornaments"><input type="checkbox" id="ornaments" name="ornaments" data-setting="ornaments" checked> Декоративные виньетки</label>
+        </fieldset>
+      </form>
+      <div class="editor-note"><span aria-hidden="true">✎</span><p>Традиция старой печати,<br>свобода вашей редакции.</p></div>
+    </aside>
+  </main>
+  <footer class="app-footer"><span>СОЗДАНО ДЛЯ ИСТОРИЙ, КОТОРЫЕ ОСТАЮТСЯ</span><span>Ваши материалы хранятся в этом браузере</span></footer>
+
+  <dialog id="add-dialog" aria-labelledby="add-title"><div class="dialog-heading"><div><span class="eyebrow">В РЕДАКЦИОННЫЙ ПОРТФЕЛЬ</span><h2 id="add-title">Новый материал</h2></div><button class="icon-button" data-close aria-label="Закрыть">×</button></div><div class="type-options"><button data-add="article"><span class="type-symbol">Aa</span><strong>Статья</strong><span>Репортаж, очерк или большая история</span><span class="option-arrow" aria-hidden="true">↗</span></button><button data-add="note"><span class="type-symbol">¶</span><strong>Заметка</strong><span>Короткая новость из городской жизни</span><span class="option-arrow" aria-hidden="true">↗</span></button><button data-add="ad"><span class="type-symbol">❧</span><strong>Объявление</strong><span>Афиша, реклама или частное послание</span><span class="option-arrow" aria-hidden="true">↗</span></button></div></dialog>
+
+  <dialog id="editor-dialog" class="editor-dialog" aria-labelledby="editor-title">
+    <div class="dialog-heading"><div><span class="eyebrow" id="editor-type">СТАТЬЯ</span><h2 id="editor-title">За редакторским столом</h2></div><button class="icon-button" data-close aria-label="Закрыть редактор">×</button></div>
+    <form id="article-form">
+      <div class="field-pair"><div><label for="article-kicker">Рубрика</label><input id="article-kicker" name="kicker" maxlength="100" placeholder="Городская хроника"></div><div><label for="article-type">Тип материала</label><select id="article-type" name="type"><option value="article">Статья</option><option value="note">Заметка</option><option value="ad">Объявление</option></select></div></div>
+      <label for="article-title">Заголовок</label><input id="article-title" class="headline-input" name="title" maxlength="240" placeholder="О чём расскажем читателю?">
+      <label id="body-label">Текст материала</label>
+      <div class="rich-toolbar" role="toolbar" aria-label="Оформление выделенного текста"><button type="button" data-format="bold" aria-label="Полужирный (Ctrl+B)"><b>Ж</b></button><button type="button" data-format="italic" aria-label="Курсив (Ctrl+I)"><i>К</i></button><button type="button" data-format="underline" aria-label="Подчёркнутый (Ctrl+U)"><u>Ч</u></button><span class="bar-divider"></span><button type="button" data-format="insertUnorderedList" aria-label="Маркированный список">≡</button><button type="button" data-format="quote" aria-label="Цитата">❞</button><button type="button" data-format="removeFormat" aria-label="Убрать форматирование">Tₓ</button></div>
+      <div id="article-body" class="rich-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="body-label" spellcheck="true"></div>
+      <div class="field-pair"><div><label for="article-author">Автор</label><input id="article-author" name="author" maxlength="160" placeholder="Можно оставить пустым"></div><div><label for="article-span">Ширина материала</label><select id="article-span" name="span"><option value="1">1 колонка</option><option value="2">2 колонки</option><option value="3">3 колонки</option><option value="4">4 колонки</option></select></div></div>
+      <div class="field-pair"><div><label for="article-align">Выравнивание текста</label><select id="article-align" name="align"><option value="justify">По ширине</option><option value="left">По левому краю</option><option value="center">По центру</option></select></div><label class="checkbox-label"><input type="checkbox" id="article-dropcap" name="dropcap"> Буквица в начале</label></div>
+      <details class="image-details"><summary>Иллюстрация и подпись <span id="image-indicator"></span></summary><div class="image-tools"><img id="image-preview" alt="Иллюстрация материала" hidden><div><button type="button" id="upload-image" class="button">↥ Загрузить изображение</button><button type="button" id="remove-image" class="text-button danger" hidden>Убрать изображение</button><p class="field-hint">JPG, PNG или WebP, до 10 МБ. В печати — чёрно-белое.</p></div></div><label for="image-caption">Подпись под иллюстрацией</label><input id="image-caption" name="caption" maxlength="300"></details>
+      <div class="dialog-actions"><button type="button" id="delete-article" class="text-button danger">Удалить материал</button><div><button type="button" class="button" data-close>Отмена</button><button type="submit" class="button primary">Применить</button></div></div>
+    </form>
+  </dialog>
+
+  <dialog id="export-dialog" aria-labelledby="export-title"><div class="dialog-heading"><div><span class="eyebrow">ИЗ НАБОРНОЙ — В СВЕТ</span><h2 id="export-title">Сохранить выпуск</h2></div><button class="icon-button" data-close aria-label="Закрыть">×</button></div>
+    <div class="export-options"><button id="download-pdf"><span class="file-symbol">PDF</span><span><strong>Готовая газета</strong><small>Скачать PDF для печати и отправки</small></span><span aria-hidden="true">↧</span></button><button id="download-json"><span class="file-symbol">JSON</span><span><strong>Редактируемый выпуск</strong><small>Все материалы, изображения и настройки</small></span><span aria-hidden="true">↧</span></button><button id="download-md"><span class="file-symbol">MD</span><span><strong>Текст в Markdown</strong><small>Читаемый текст и копия макета для импорта</small></span><span aria-hidden="true">↧</span></button></div>
+    <p class="field-hint">JSON — основной формат для продолжения работы. Markdown содержит снимок выпуска: при импорте он имеет приоритет над правками текста.</p><p class="field-hint">Скачиваемый PDF сохраняет страницы как изображения высокого качества. Для PDF с выделяемым текстом используйте «Печать» → «Сохранить как PDF».</p><p id="export-progress" role="status"></p><a id="pdf-ready" class="button primary" hidden>Скачать готовый PDF</a>
+  </dialog>
+
+  <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-heading"><div><span class="eyebrow">ПАМЯТКА РЕДАКТОРУ</span><h2 id="help-title">Ваш первый выпуск</h2></div><button class="icon-button" data-close aria-label="Закрыть">×</button></div><ol class="help-steps"><li><strong>Соберите материалы.</strong> Добавьте статью, заметку или объявление. Нажмите на заголовок слева или материал в газете, чтобы редактировать его.</li><li><strong>Настройте полосу.</strong> Измените название, дату, число колонок и размер текста. Длинные материалы продолжаются на следующих страницах автоматически.</li><li><strong>Расставьте акценты.</strong> Выделяйте текст, добавляйте буквицы и иллюстрации. Стрелки в списке меняют порядок, кнопка копирования создаёт дубликат.</li><li><strong>Сохраните и напечатайте.</strong> Экспортируйте PDF, а для дальнейшей работы — JSON. «Открыть выпуск» загружает JSON или Markdown. При обычной печати выберите размер бумаги из макета, масштаб 100% и отключите колонтитулы браузера.</li></ol><p class="help-note">Изменения автоматически сохраняются в этом браузере. Чтобы перенести выпуск на другой компьютер или телефон, скачайте JSON. Ctrl+Z — отмена, Ctrl+Shift+Z — повтор, Ctrl+S — скачать JSON.</p><button id="demo-button" class="button">Открыть демонстрационный выпуск</button></dialog>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-heading"><h2 id="confirm-title">Заменить текущий выпуск?</h2><button class="icon-button" data-close aria-label="Закрыть">×</button></div><p id="confirm-message"></p><div class="dialog-actions"><button id="backup-button" class="text-button">Сначала скачать JSON</button><div><button class="button" data-close>Отмена</button><button id="confirm-button" class="button primary">Продолжить</button></div></div></dialog>
+  <input id="import-file" type="file" accept=".json,.md,.markdown,application/json,text/markdown" hidden>
+  <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript><p class="noscript">Для редактора нужен JavaScript. Включите его в настройках браузера.</p></noscript>
+</body>
+</html>

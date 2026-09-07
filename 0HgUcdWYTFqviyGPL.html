@@ -1,0 +1,356 @@
+<html><head><base href="https://eberron-valenar-gazette.com/"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Валенарский Вестник - Редактор Газеты</title><style>
+    body {
+        font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+        background-color: #f0e6d2;
+        color: #2c2c2c;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+    }
+    .newspaper {
+        width: 210mm;
+        height: 297mm;
+        padding: 10mm 20mm 20mm;
+        background-color: #fffaf0;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    .header {
+        text-align: center;
+        border-bottom: 2px solid #2c2c2c;
+        margin-bottom: 10mm;
+        position: relative;
+    }
+    .header h1 {
+        font-size: 48px;
+        margin: 0;
+        font-weight: bold;
+        color: #8b4513;
+    }
+    .date {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        font-size: 14px;
+    }
+    .content-area {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 10px;
+        height: calc(100% - 80px);
+    }
+    .article, .note, .ad {
+        border: 1px dashed #8b4513;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #fff;
+        cursor: move;
+        position: relative;
+    }
+    .article h2, .note h3, .ad h3 {
+        margin-top: 0;
+    }
+    .controls {
+        width: 300px;
+        background-color: #8b4513;
+        padding: 20px;
+        border-radius: 5px;
+        color: #fff;
+        height: calc(100vh - 40px);
+        overflow-y: auto;
+    }
+    .controls button, .controls input {
+        display: block;
+        margin-bottom: 10px;
+        padding: 5px 10px;
+        background-color: #f0e6d2;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        color: #2c2c2c;
+    }
+    .author {
+        font-style: italic;
+        color: #666;
+        margin-top: 5px;
+    }
+    .selected {
+        box-shadow: 0 0 0 3px #ff6347;
+    }
+    .remove-element {
+        display: none;
+    }
+    .selected .remove-element {
+        display: block;
+    }
+    .merge-options {
+        margin-top: 20px;
+    }
+    .merge-options button {
+        margin-bottom: 5px;
+    }
+    #block-settings {
+        margin-top: 20px;
+        display: none;
+    }
+    .removable-container {
+        position: relative;
+        margin-bottom: 10px;
+    }
+    .image-container {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+    }
+    .image-container img {
+        max-width: 100%;
+        height: auto;
+    }
+    .delete-image {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: rgba(255, 0, 0, 0.7);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .newspaper, .newspaper * {
+            visibility: visible;
+        }
+        .newspaper {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    }
+</style></head><body>
+    <div class="newspaper">
+        <div class="header">
+            <h1 id="newspaper-title" contenteditable="true">Валенарский Вестник</h1>
+            <div class="date" contenteditable="true">15/Зарантира/997</div>
+        </div>
+        <div class="content-area" id="content-area">
+            <!-- Содержимое газеты будет добавляться сюда -->
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="add-article">Добавить статью</button>
+        <button id="add-note">Добавить заметку</button>
+        <button id="add-ad">Добавить рекламу</button>
+        <button id="delete-block">Удалить блок</button>
+        <button id="print">Печать</button>
+
+        <div id="block-settings">
+            <h3>Настройки блока</h3>
+            <button id="add-author">Добавить автора</button>
+            <button id="add-image">Добавить изображение</button>
+            <button id="add-text">Добавить текст</button>
+            <div class="merge-options">
+                <button id="merge-top">Объединить с верхним</button>
+                <button id="merge-bottom">Объединить с нижним</button>
+                <button id="merge-left">Объединить с левым</button>
+                <button id="merge-right">Объединить с правым</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.13.0/Sortable.min.js"></script>
+    <script>
+        const contentArea = document.getElementById('content-area');
+        const blockSettings = document.getElementById('block-settings');
+        let selectedBlock = null;
+
+        new Sortable(contentArea, {
+            animation: 150,
+            ghostClass: 'blue-background-class'
+        });
+
+        function addContent(type) {
+            const element = document.createElement('div');
+            element.className = type;
+            let content = '';
+            switch(type) {
+                case 'article':
+                    content = `
+                        <h2 contenteditable="true">Заголовок статьи</h2>
+                        <div class="removable-container text-module">
+                            <p contenteditable="true">Текст вашей статьи...</p>
+                            <button class="remove-element">&times;</button>
+                        </div>
+                    `;
+                    break;
+                case 'note':
+                    content = `
+                        <h3 contenteditable="true">Заголовок заметки</h3>
+                        <div class="removable-container text-module">
+                            <p contenteditable="true">Текст вашей заметки...</p>
+                            <button class="remove-element">&times;</button>
+                        </div>
+                    `;
+                    break;
+                case 'ad':
+                    content = `
+                        <h3 contenteditable="true">Реклама</h3>
+                        <div class="removable-container text-module">
+                            <p contenteditable="true">Текст вашей рекламы...</p>
+                            <button class="remove-element">&times;</button>
+                        </div>
+                    `;
+                    break;
+            }
+            element.innerHTML = content;
+            element.addEventListener('click', () => selectBlock(element));
+            contentArea.appendChild(element);
+        }
+
+        function selectBlock(block) {
+            if (selectedBlock) {
+                selectedBlock.classList.remove('selected');
+            }
+            selectedBlock = block;
+            selectedBlock.classList.add('selected');
+            blockSettings.style.display = 'block';
+        }
+
+        function addAuthor() {
+            if (!selectedBlock) return;
+            if (selectedBlock.querySelector('.author')) return;
+
+            const authorContainer = document.createElement('div');
+            authorContainer.className = 'removable-container author';
+            authorContainer.innerHTML = `
+                <div class="author" contenteditable="true">Имя автора</div>
+                <button class="remove-element">&times;</button>
+            `;
+            selectedBlock.appendChild(authorContainer);
+        }
+
+        function addTextModule() {
+            if (!selectedBlock) return;
+            const textContainer = document.createElement('div');
+            textContainer.className = 'removable-container text-module';
+            textContainer.innerHTML = `
+                <p contenteditable="true">Новый текстовый модуль...</p>
+                <button class="remove-element">&times;</button>
+            `;
+            selectedBlock.appendChild(textContainer);
+            ensureAuthorAtBottom(selectedBlock);
+        }
+
+        function ensureAuthorAtBottom(block) {
+            const authorModule = block.querySelector('.author');
+            if (authorModule) {
+                block.appendChild(authorModule.parentElement);
+            }
+        }
+
+        function removeElement(element) {
+            element.closest('.removable-container').remove();
+        }
+
+        function addImage() {
+            if (!selectedBlock) return;
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const imgContainer = document.createElement('div');
+                        imgContainer.className = 'removable-container image-container';
+                        imgContainer.innerHTML = `
+                            <img src="${e.target.result}" alt="Загруженное изображение">
+                            <button class="remove-element">&times;</button>
+                        `;
+                        selectedBlock.appendChild(imgContainer);
+                        ensureAuthorAtBottom(selectedBlock);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function deleteSelectedBlock() {
+            if (selectedBlock) {
+                selectedBlock.remove();
+                selectedBlock = null;
+                blockSettings.style.display = 'none';
+            }
+        }
+
+        function mergeBlocks(direction) {
+            if (!selectedBlock) return;
+            const blocks = Array.from(contentArea.children);
+            const index = blocks.indexOf(selectedBlock);
+            let targetIndex;
+            switch (direction) {
+                case 'top': targetIndex = index - 3; break;
+                case 'bottom': targetIndex = index + 3; break;
+                case 'left': targetIndex = index - 1; break;
+                case 'right': targetIndex = index + 1; break;
+            }
+            if (targetIndex >= 0 && targetIndex < blocks.length) {
+                const targetBlock = blocks[targetIndex];
+                const mergeConfirm = confirm(`Объединить с блоком "${getBlockTitle(targetBlock)}"?\nСодержимое текущего блока будет сохранено.`);
+                if (mergeConfirm) {
+                    selectedBlock.style.gridColumn = direction === 'left' || direction === 'right' ? 'span 2' : 'auto';
+                    selectedBlock.style.gridRow = direction === 'top' || direction === 'bottom' ? 'span 2' : 'auto';
+                    targetBlock.remove();
+                }
+            } else {
+                alert('Невозможно объединить. Нет соседнего блока в указанном направлении.');
+            }
+        }
+
+        function getBlockTitle(block) {
+            const heading = block.querySelector('h2, h3');
+            return heading ? heading.textContent : 'Безымянный блок';
+        }
+
+        document.getElementById('add-author').addEventListener('click', addAuthor);
+        document.getElementById('add-text').addEventListener('click', addTextModule);
+        document.getElementById('add-image').addEventListener('click', addImage);
+        document.getElementById('delete-block').addEventListener('click', deleteSelectedBlock);
+
+        document.getElementById('merge-top').addEventListener('click', () => mergeBlocks('top'));
+        document.getElementById('merge-bottom').addEventListener('click', () => mergeBlocks('bottom'));
+        document.getElementById('merge-left').addEventListener('click', () => mergeBlocks('left'));
+        document.getElementById('merge-right').addEventListener('click', () => mergeBlocks('right'));
+
+        document.body.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('remove-element')) {
+                removeElement(e.target);
+            }
+        });
+
+        document.getElementById('add-article').addEventListener('click', () => addContent('article'));
+        document.getElementById('add-note').addEventListener('click', () => addContent('note'));
+        document.getElementById('add-ad').addEventListener('click', () => addContent('ad'));
+        document.getElementById('print').addEventListener('click', () => window.print());
+
+        contentArea.addEventListener('click', (e) => {
+            if (e.target === contentArea) {
+                if (selectedBlock) {
+                    selectedBlock.classList.remove('selected');
+                }
+                selectedBlock = null;
+                blockSettings.style.display = 'none';
+            }
+        });
+    </script>
+</body></html>
